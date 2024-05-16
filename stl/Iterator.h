@@ -1,22 +1,110 @@
 #pragma once
+#include "BadIteratorException.h"
+#include "Container.h"
+#include "RemoveException.h"
 
-#include <stdexcept>
-template <typename Container> class VectorIterator {
+template <class _T> class List {
 private:
-  typename Container::value_type *ptr; // Указатель на текущий элемент вектора
+  struct Node {
+    _T value;
+    Node *next;
+    Node(const _T &val, Node *n = nullptr) : value(val), next(n) {}
+  };
+
+  Node *head;
 
 public:
-  // Конструктор итератора
-  explicit VectorIterator(Container &vec, size_t index = 0) {
-    if (index >= vec.size()) {
-      throw std::out_of_range("Invalid index");
+  class Iterator {
+  private:
+    Node *node;
+
+  public:
+    Iterator(Node *n) : node(n) {}
+
+    Iterator &operator++() {
+      if (node) {
+        node = node->next;
+      }
+      return *this;
     }
-    ptr = &vec[index];
+
+    Iterator operator++(int) {
+      Iterator it = *this;
+      ++(*this);
+      return it;
+    }
+
+    Iterator operator->() const {
+      if (node == nullptr) {
+        throw BadIteratorException();
+      } else {
+        return &(node->value);
+      }
+    }
+
+    bool operator==(const Iterator &other) const { return node == other.node; }
+
+    bool operator!=(const Iterator &other) const { return !(*this == other); }
+
+    _T &operator*() const { return node->value; }
+  };
+
+  List() : head(nullptr) {}
+  ~List() { clear(); }
+
+  void push_front(const _T &value) { head = new Node(value, head); }
+
+  void pop_front() {
+    if (head) {
+      Node *temp = head;
+      head = head->next;
+      delete temp;
+    }
   }
 
-  // Копирующий конструктор
-  VectorIterator(const VectorIterator &other) : ptr(other.ptr) {}
+  bool empty() const { return head == nullptr; }
 
-  // Деструктор
-  ~VectorIterator() = default;
+  void clear() {
+    while (!empty()) {
+      pop_front();
+    }
+  }
+
+  _T front() { return head->value; }
+
+  Iterator begin() const { return Iterator(head); }
+
+  Iterator end() const { return Iterator(nullptr); }
+
+  Iterator find(const _T &value) const {
+    Node *current = head;
+    while (current != nullptr) {
+      if (current->value == value) {
+        return Iterator(current);
+      }
+      current = current->next;
+    }
+    return end();
+  }
+
+  Iterator erase(Iterator pos) {
+    if (pos != end()) {
+      Node *toRemove = pos.node;
+      Iterator next(toRemove->next);
+
+      if (toRemove == head) {
+        head = head->next;
+      } else {
+        Node *current = head;
+        while (current->next != toRemove) {
+          current = current->next;
+        }
+        current->next = toRemove->next;
+      }
+
+      delete toRemove;
+      return next;
+    }
+    return pos;
+  }
 };

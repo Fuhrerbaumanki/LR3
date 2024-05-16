@@ -1,257 +1,194 @@
 #pragma once
-#include <algorithm>
-#include <initializer_list>
-#ifndef CONTAINER_H
-#define CONTAINER_H
 
+#include "BadIteratorException.h"
+#include "Iterator.h"
+#include "RemoveException.h"
 #include <iostream>
 
-template <typename _DataType> class Vector {
+template <class _KeyType, class _DataType, class _Hash> class UnorderedMap {
 private:
-  _DataType *data; // Указатель на массив данных
-  size_t size;     // Размер вектора
-  size_t _capacity;
+  using Pair = std::pair<_KeyType, _DataType>;
+
+  static constexpr size_t INITIAL_SIZE = 16;
+  static constexpr float DEFAULT_LOAD_FACTOR = 0.75;
+
+  List<Pair> *m_table;
+  size_t m_capacity;
+  size_t m_size;
+  float maxLoadFactor;
+
+  _Hash hashFunction;
+
+  void rehash(size_t newCapacity) {
+    List<Pair> *newTable = new List<Pair>[newCapacity]();
+    for (size_t i = 0; i < m_capacity; i++) {
+      List<Pair> &chain = m_table[i];
+      while (!chain.empty()) {
+        Pair &pair = chain.front();
+        size_t index = hashFunction(pair.first) % newCapacity;
+        newTable[index].push_front(pair);
+        chain.pop_front();
+      }
+    }
+    delete[] m_table;
+    m_table = newTable;
+    m_capacity = newCapacity;
+  }
 
 public:
-  // Конструкторы
-  // Конструктор по умолчанию
-  Vector() : data(nullptr), size(0) {}
+  UnorderedMap() : UnorderedMap(INITIAL_SIZE) {}
 
-  // Конструктор с заданным размером
-  Vector(size_t _size) : size(_size) { data = new _DataType[size](); }
+  explicit UnorderedMap(size_t segmentCount)
+      : m_table(new List<Pair>[segmentCount]()), m_capacity(segmentCount),
+        m_size(0), maxLoadFactor(DEFAULT_LOAD_FACTOR) {}
 
-  // Конструктор с заданным размером и значением для инициализации элементов
-  Vector(size_t _size, const _DataType &value) : size(_size) {
-    data = new _DataType[size];
-    for (size_t i = 0; i < size; ++i) {
-      data[i] = value;
-    }
+  template <class Iterator>
+  UnorderedMap(Iterator begin, Iterator end) : UnorderedMap() {
+    insert(begin, end);
   }
 
-  // Конструктор с полуинтервалом [beg, end) заданным итераторами
-  template <typename Iterator>
-  Vector(Iterator beg, Iterator end) : size(std::distance(beg, end)) {
-    data = new _DataType[size];
-    std::copy(beg, end, data);
+  UnorderedMap(std::initializer_list<Pair> init) : UnorderedMap() {
+    insert(init);
   }
 
-  // Конструктор с использованием списка инициализации
-  Vector(std::initializer_list<_DataType> initList) : size(initList.size()) {
-    data = new _DataType[size];
-    std::copy(initList.begin(), initList.end(), data);
+  UnorderedMap(const UnorderedMap &other)
+      : UnorderedMap(other.begin(), other.end()) {}
+
+  UnorderedMap(UnorderedMap &&other) noexcept
+      : m_table(other.m_table), m_capacity(other.m_capacity),
+        m_size(other.m_size), maxLoadFactor(other.maxLoadFactor),
+        hashFunction(std::move(other.hashFunction)) {
+    other.m_table = nullptr;
+    other.m_capacity = 0;
+    other.m_size = 0;
   }
 
-  // Копирующий конструктор
-  Vector(const Vector<_DataType> &other) : size(other.size) {
-    data = new _DataType[size];
-    std::copy(other.data, other.data + size, data);
-  }
+  ~UnorderedMap() { delete[] m_table; }
 
-  // Конструктор переноса
-  Vector(Vector<_DataType> &&other) noexcept
-      : data(other.data), size(other.size) {
-    other.data = nullptr;
-    other.size = 0;
-  }
-
-  // Метод для динамического изменения размера вектора
-  void resizeCapacity() {
-    size_t newCapacity =
-        (_capacity == 0) ? 1 : 2 * _capacity; // Удваиваем размер
-    _DataType *newData = new _DataType[newCapacity];
-    std::copy(data, data + size, newData);
-    delete[] data;
-    data = newData;
-    _capacity = newCapacity;
-  }
-
-  // Функции-операции
-  // Оператор присваивания с копированием
-  Vector<_DataType> &operator=(const Vector<_DataType> &other) {
+  UnorderedMap &operator=(const UnorderedMap &other) {
     if (this != &other) {
-      delete[] data;
-      size = other.size;
-      data = new _DataType[size];
-      std::copy(other.data, other.data + size, data);
+      UnorderedMap temp(other);
+      std::swap(m_table, temp.m_table);
+      std::swap(m_capacity, temp.m_capacity);
+      std::swap(m_size, temp.m_size);
+      std::swap(maxLoadFactor, temp.maxLoadFactor);
+      std::swap(hashFunction, temp.hashFunction);
     }
     return *this;
   }
 
-  // Операция присваивания с переносом
-  Vector<_DataType> &operator=(Vector<_DataType> &&other) noexcept {
+  UnorderedMap &operator=(UnorderedMap &&other) noexcept {
     if (this != &other) {
-      delete[] data;
-      data = other.data;
-      size = other.size;
-      other.data = nullptr;
-      other.size = 0;
+      delete[] m_table;
+      m_table = other.m_table;
+      m_capacity = other.m_capacity;
+      m_size = other.m_size;
+      maxLoadFactor = other.maxLoadFactor;
+      hashFunction = std::move(other.hashFunction);
+
+      other.m_table = nullptr;
+      other.m_capacity = 0;
+      other.m_size = 0;
     }
     return *this;
   }
 
-  // Оператор индексирования для чтения
-  _DataType &operator[](size_t index) { return data[index]; }
-
-  // Оператор индексирования для записи
-  const _DataType &operator[](size_t index) const { return data[index]; }
-
-  // Методы
-  // Возвращает элемент с индексом idx
-  _DataType &at(size_t idx) {
-    if (idx >= size) {
-      throw std::out_of_range("Выход за пределы массива");
+  _DataType &operator[](const _KeyType &key) {
+    Pair pair(key, _DataType());
+    size_t index = hashFunction(pair.first) % m_capacity;
+    List<Pair> &chain = m_table[index];
+    auto it = find(chain, key);
+    if (it != chain.end()) {
+      return (*it).second;
     }
-    return data[idx];
+    chain.push_front(pair);
+    m_size++;
+    if (static_cast<float>(m_size) / m_capacity > maxLoadFactor) {
+      rehash(m_capacity * 2);
+      index = hashFunction(pair.first) % m_capacity;
+      chain = m_table[index];
+    }
+    return chain.front().second;
   }
 
-  // Метод begin() – возвращает итератор на начало вектора
-  _DataType *begin() { return data; }
+  float getMaxLoadFactor() const { return maxLoadFactor; };
 
-  // Метод end() – возвращает итератор на элемент, следующий за последним
-  _DataType *end() { return data + size; }
+  void setMaxLoadFactor(float value) { maxLoadFactor = value; };
 
-  // Добавляет копию аргумента elem в конец вектора (обычная версия)
-  void pushBack(const _DataType &elem) {
-    if (size == _capacity) {
-      resizeCapacity();
+  _DataType &at(const _KeyType &key) {
+    size_t index = hashFunction(key) % m_capacity;
+    List<Pair> &chain = m_table[index];
+    // List<Pair>::Iterator it = find(chain, key);
+    auto it = find(chain, key);
+    if (it != chain.end()) {
+      return (*it).second;
     }
-    data[size++] = elem;
+    throw std::out_of_range("UnorderedMap::at() key not found");
   }
 
-  // Добавляет копию аргумента elem в конец вектора (версия с переносом)
-  void pushBack(_DataType &&elem) {
-    _DataType *newData = new _DataType[size + 1];
-    std::copy(data, data + size, newData);
-    newData[size] = std::move(elem);
-    delete[] data;
-    data = newData;
-    ++size;
-  }
-
-  // Метод popBack() – удаляет последний элемент
-  void popBack() {
-    if (size > 0) {
-      --size;
-      _DataType *newData = new _DataType[size];
-      std::copy(data, data + size, newData);
-      delete[] data;
-      data = newData;
-    }
-  }
-
-  // Метод insert(pos, elem) – вставляет копию элемента elem перед позицией
-  // итератора pos (обычная версия)
-  iterator insert(iterator pos, const _DataType &elem) {
-    size_t index = pos - data;
-    if (index > size) {
-      throw std::out_of_range("Недопустимая позиция итератора");
-    }
-    if (size == _capacity) {
-      resizeCapacity();
-    }
-    _DataType *newData = new _DataType[size + 1];
-    std::copy(data, data + index, newData);
-    newData[index] = elem;
-    std::copy(data + index, data + size, newData + index + 1);
-    delete[] data;
-    data = newData;
-    ++size;
-    return data + index;
-  }
-
-  // Метод insert(pos, elem) – вставляет копию элемента elem перед позицией
-  // итератора pos (версия с переносом)
-  iterator insert(iterator pos, _DataType &&elem) {
-    size_t index = pos - data;
-    if (index > size) {
-      throw std::out_of_range("Недопустимая позиция итератора");
-    }
-    _DataType *newData = new _DataType[size + 1];
-    std::copy(data, data + index, newData);
-    newData[index] = std::move(elem);
-    std::copy(data + index, data + size, newData + index + 1);
-    delete[] data;
-    data = newData;
-    ++size;
-    return data + index;
-  }
-
-  // Вставляет копии всех элементов интервала
-  iterator insert(iterator pos, Iterator beg, Iterator end) {
-    size_t index = pos - data;
-    size_t count = std::distance(beg, end);
-    if (count == 0) {
-      return pos;
-    }
-    _DataType *newData = new _DataType[size + count];
-    std::copy(data, data + index, newData);
-    std::copy(beg, end, newData + index);
-    std::copy(data + index, data + size, newData + index + count);
-    delete[] data;
-    data = newData;
-    size += count;
-    return data + index;
-  }
-
-  // Удаляет элемент в позиции итератора pos и возвращает позицию след эл-та
-  iterator erase(iterator pos) {
-    size_t index = pos - data;
-    if (index >= size) {
-      throw std::out_of_range("Недопустимая позиция итератора");
-    }
-    std::copy(data + index + 1, data + size, data + index);
-    --size;
-    return data + index;
-  }
-
-  // Метод reserve(num) – увеличивает емкость (объем зарезервированной памяти)
-  void reserve(size_t num) {
-    if (num <= capacity()) {
-      return; // Новая емкость не меньше текущей
-    }
-
-    // Создаем новый буфер с увеличенной емкостью
-    _DataType *newData = new _DataType[num];
-
-    // Копируем существующие элементы в новый буфер
-    std::copy(data, data + size, newData);
-
-    // Освобождаем память из старого буфера
-    delete[] data;
-
-    // Обновляем указатель на данные и емкость вектора
-    data = newData;
-  }
-
-  // Метод resize(num) – изменяет количество элементов до num
-  void resize(size_t num) {
-    if (num > size) {
-      // Увеличиваем размер вектора
-      reserve(num); // Убедимся, что есть достаточно места в памяти
-      for (size_t i = size; i < num; ++i) {
-        data[i] =
-            _DataType(); // Создаем новые элементы конструктором по умолчанию
+  List<Pair>::Iterator begin() const {
+    for (size_t i = 0; i < m_capacity; i++) {
+      if (!m_table[i].empty()) {
+        return m_table[i].begin();
       }
-    } else {
-      // Уменьшаем размер вектора
-      size = num;
+    }
+    return end();
+  }
+
+  List<Pair>::Iterator end() const { return nullptr; }
+
+  template <class Iterator> void insert(Iterator begin, Iterator end) {
+    for (Iterator it = begin; it != end; ++it) {
+      insert(*it);
     }
   }
 
-  // Проверяет контейнер на пустоту
-  bool empty() const { return size == 0; }
+  void insert(const Pair &pair) { operator[](pair.first) = pair.second; }
 
-  // Метод size() – возвращает размер вектора
-  size_t size_vecor() const { return size; }
+  void insert(Pair &&pair) { operator[](pair.first) = std::move(pair.second); }
 
-  // Возвращает количество элементов, максимально возможное
-  size_t capacity() const { return _capacity; }
+  void erase(const _KeyType &key) {
+    size_t index = hashFunction(key) % m_capacity;
+    List<Pair> &chain = m_table[index];
+    ////List<Pair>::Iterator it = find(chain, key);
+    auto it = find(chain, key);
+    if (it != chain.end()) {
+      chain.erase(it);
+      m_size--;
+    }
+  }
 
-  // Метод clear() – удаляет все элементы вектора
-  void clear() { size = 0; }
+  List<Pair>::Iterator erase(List<Pair>::Iterator pos) {
+    size_t index = hashFunction((*pos).first) % m_capacity;
+    List<Pair> &chain = m_table[index];
+    auto next = chain.erase(pos);
+    m_size--;
+    return next;
+  }
 
-  // Деструктор
-  ~Vector() { delete[] data; }
+  void reserve(size_t num) {
+    size_t newCapacity = num / maxLoadFactor;
+    if (newCapacity > m_capacity) {
+      rehash(newCapacity);
+    }
+  }
+
+  size_t size() const { return m_size; }
+
+  void clear() {
+    for (size_t i = 0; i < m_capacity; i++) {
+      m_table[i].clear();
+    }
+    m_size = 0;
+  }
+
+private:
+  List<Pair>::Iterator find(List<Pair> &chain, const _KeyType &key) const {
+    for (auto it = chain.begin(); it != chain.end(); ++it) {
+      if ((*it).first == key) {
+        return it;
+      }
+    }
+    return chain.end();
+  }
 };
-
-#endif // CONTAINER_H
