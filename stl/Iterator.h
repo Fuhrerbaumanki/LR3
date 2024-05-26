@@ -1,4 +1,6 @@
 #pragma once
+#include <iomanip>
+#include <iostream>
 #include <utility>
 
 template <typename _KeyType, typename _DataType> class Node;
@@ -89,3 +91,20 @@ public:
 
   NodeType *GetPtr() const { return m_ptr; }
 };
+
+template <typename _KeyType, typename _DataType>
+std::ostream &my_ostream(std::ostream &os,
+                         const UnorderedMapIterator<_KeyType, _DataType> &it) {
+  if (it.GetPtr() == nullptr) {
+    os << "Iterator points to nullptr";
+  } else {
+    const auto &pair = *it;
+    os << "|  Id: " << std::setw(5) << pair.first
+       << "  |  Name: " << std::setw(10) << pair.second.m_name
+       << "  |  Manufacturer: " << std::setw(10) << pair.second.m_manufacturer
+       << "  |  Warehouse address: " << std::setw(30)
+       << pair.second.m_warehouse_address << "  |  Weight: " << std::setw(5)
+       << pair.second.m_weight << "  |";
+  }
+  return os;
+}

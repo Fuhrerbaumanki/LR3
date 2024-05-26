@@ -1,5 +1,7 @@
 #include "Algorithms.h"
 #include "Container.h"
+#include "Iterator.h"
+#include <algorithm>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
@@ -17,17 +19,18 @@ int main() {
   using namespace std;
 
   UnorderedMap<uint32_t, Goods> cont_1{
-      {320, {320, "cupboard", "IKEA", "Moscow, Pushkin street, 7", 10.25}},
-      {117, {117, "shelf", "MZ5 group", "Saratov, Prospekt mira, 23", 5.62}},
-      {54, {54, "nightstand", "IKEA", "Moscow, Tverskaya street, 12", 7.11}},
-      {61, {61, "chair", "RIVAL", "Rostov, Sokolov Avenue, 1", 6.32}},
-      {546,
-       {546, "armchair", "Sanflor", "Moscow, Tsvetnoy Boulevard, 3", 9.93}},
-      {4, {4, "table", "IKEA", "Moscow, Pushkin street, 7", 4.95}},
-      {28, {28, "chair", "MZ5 group", "Saratov, Prospekt mira, 23", 7.0}},
-      {9, {9, "cupboard", "Aquanet", "Omsk, Lenin street, 31", 13.2}},
-      {1123, {1123, "cupboard", "IKEA", "Moscow, Pushkin street, 7", 20.3}},
-      {3, {3, "chair", "RIVAL", "Rostov, Sokolov Avenue, 1", 5.20}}};
+      {101, {101, "laptop", "Dell", "New York, 5th Avenue, 15", 2.5}},
+      {202, {202, "smartphone", "Samsung", "Seoul, Samsung-ro, 67", 0.3}},
+      {303, {303, "tablet", "Apple", "Cupertino, Infinite Loop, 1", 0.6}},
+      {404, {404, "monitor", "LG", "Seoul, Yeouido-dong, 20", 4.8}},
+      {505, {505, "printer", "HP", "Palo Alto, Page Mill Road, 1501", 5.2}},
+      {606, {606, "router", "Cisco", "San Jose, Tasman Drive, 500", 0.7}},
+      {707, {707, "camera", "Canon", "Tokyo, Shimomaruko, 3", 0.9}},
+      {808, {808, "headphones", "Sony", "Tokyo, Konan, 1", 0.2}},
+      {909,
+       {909, "keyboard", "Logitech", "Lausanne, Innovation Park, 10", 1.1}},
+      {1010,
+       {1010, "mouse", "Razer", "San Francisco, Howard Street, 201", 0.1}}};
   cout << "Contents of cont_1: " << endl;
   forEach(cont_1.begin(), cont_1.end(), [](const PairType &pair) {
     cout << "|  Id: " << setw(5) << pair.first << "  |  Name: " << setw(10)
@@ -39,10 +42,9 @@ int main() {
   cout << endl;
 
   UnorderedMap<uint32_t, Goods> cont_2;
-  PairType obj_1 = {
-      108, {108, "cup", "FixPrice", "Tomsk, Andropov avenue, 8", 0.35}};
+  PairType obj_1 = {111, {111, "watch", "Casio", "Tokyo, Hatsudai, 1", 0.1}};
   PairType obj_2 = {
-      1, {1, "pen", "FixPrice", "Tomsk, Lomonosov street, 53", 0.13}};
+      222, {222, "speaker", "Bose", "Framingham, The Mountain Road, 100", 1.2}};
   cont_2.Insert(obj_1);
   cont_2[obj_2.first] = obj_2.second;
   cout << "Contents of cont_2: " << endl;
@@ -68,9 +70,9 @@ int main() {
        << iter->second.m_weight << "  |" << endl;
   cout << endl;
 
-  iter->second.m_warehouse_address = "Moscow, Pushkin street, 8";
+  iter->second.m_warehouse_address = "San Francisco, Market Street, 1";
   cout << "The contents of the container cont_1, after replacing the address "
-          "of the found element with 'Moscow, Pushkin street, 8':"
+          "of the found element with 'San Francisco, Market Street, 1':"
        << endl
        << endl;
   forEach(cont_1.begin(), cont_1.end(), [](const PairType &pair) {
@@ -80,4 +82,27 @@ int main() {
          << pair.second.m_warehouse_address << "  |  Weight: " << setw(5)
          << pair.second.m_weight << "  |" << endl;
   });
+
+  UnorderedMap<uint32_t, Goods> cont_3{
+      {101, {101, "laptop", "Dell", "New York, 5th Avenue, 15", 2.5}},
+      {202, {202, "smartphone", "Samsung", "Seoul, Samsung-ro, 67", 0.3}},
+      {303, {303, "tablet", "Apple", "Cupertino, Infinite Loop, 1", 0.6}},
+      {404, {404, "monitor", "LG", "Seoul, Yeouido-dong, 20", 4.8}},
+      {505, {505, "printer", "HP", "Palo Alto, Page Mill Road, 1501", 5.2}},
+      {606, {606, "router", "Cisco", "San Jose, Tasman Drive, 500", 0.7}},
+      {707, {707, "camera", "Canon", "Tokyo, Shimomaruko, 3", 0.9}},
+      {808, {808, "headphones", "Sony", "Tokyo, Konan, 1", 0.2}},
+      {909,
+       {909, "keyboard", "Logitech", "Lausanne, Innovation Park, 10", 1.1}},
+      {1010,
+       {1010, "mouse", "Razer", "San Francisco, Howard Street, 201", 0.1}}};
+
+  double weight_threshold = 1.0;
+  std::cout << "Items with weight greater than " << weight_threshold << ":"
+            << std::endl;
+  copyIf(cont_3.begin(), cont_3.end(), my_ostream<Goods>(std::cout, "\n"),
+         [weight_threshold](const PairType &pair) {
+           return pair.second.m_weight > weight_threshold;
+         });
+  return 0;
 }
