@@ -1,110 +1,91 @@
 #pragma once
-#include "BadIteratorException.h"
-#include "Container.h"
-#include "RemoveException.h"
+#include <utility>
 
-template <class _T> class List {
+template <typename _KeyType, typename _DataType> class Node;
+
+template <typename _KeyType, typename _DataType> class UnorderedMapIterator {
+  using PairType = std::pair<const _KeyType, _DataType>;
+  using NodeType = Node<_KeyType, _DataType>;
+
 private:
-  struct Node {
-    _T value;
-    Node *next;
-    Node(const _T &val, Node *n = nullptr) : value(val), next(n) {}
-  };
-
-  Node *head;
+  NodeType *m_ptr;
 
 public:
-  class Iterator {
-  private:
-    Node *node;
+  UnorderedMapIterator(NodeType *p_ptr = nullptr) : m_ptr(p_ptr) {}
+  UnorderedMapIterator(const UnorderedMapIterator &p_other)
+      : m_ptr(p_other.m_ptr) {}
 
-  public:
-    Iterator(Node *n) : node(n) {}
-
-    Iterator &operator++() {
-      if (node) {
-        node = node->next;
-      }
+  UnorderedMapIterator &operator=(const UnorderedMapIterator &p_other) {
+    if (this == &p_other) {
       return *this;
     }
-
-    Iterator operator++(int) {
-      Iterator it = *this;
-      ++(*this);
-      return it;
-    }
-
-    Iterator operator->() const {
-      if (node == nullptr) {
-        throw BadIteratorException();
-      } else {
-        return &(node->value);
-      }
-    }
-
-    bool operator==(const Iterator &other) const { return node == other.node; }
-
-    bool operator!=(const Iterator &other) const { return !(*this == other); }
-
-    _T &operator*() const { return node->value; }
-  };
-
-  List() : head(nullptr) {}
-  ~List() { clear(); }
-
-  void push_front(const _T &value) { head = new Node(value, head); }
-
-  void pop_front() {
-    if (head) {
-      Node *temp = head;
-      head = head->next;
-      delete temp;
-    }
+    m_ptr = p_other.m_ptr;
+    return *this;
   }
 
-  bool empty() const { return head == nullptr; }
-
-  void clear() {
-    while (!empty()) {
-      pop_front();
-    }
+  UnorderedMapIterator &operator=(const NodeType *p_ptr) {
+    m_ptr = p_ptr;
+    return *this;
   }
 
-  _T front() { return head->value; }
-
-  Iterator begin() const { return Iterator(head); }
-
-  Iterator end() const { return Iterator(nullptr); }
-
-  Iterator find(const _T &value) const {
-    Node *current = head;
-    while (current != nullptr) {
-      if (current->value == value) {
-        return Iterator(current);
-      }
-      current = current->next;
+  const PairType &operator*() const {
+    if (!m_ptr) {
+      throw IteratorError(
+          "IteratorError: iterator does not point to an element.");
     }
-    return end();
+    return m_ptr->m_pair;
   }
 
-  Iterator erase(Iterator pos) {
-    if (pos != end()) {
-      Node *toRemove = pos.node;
-      Iterator next(toRemove->next);
-
-      if (toRemove == head) {
-        head = head->next;
-      } else {
-        Node *current = head;
-        while (current->next != toRemove) {
-          current = current->next;
-        }
-        current->next = toRemove->next;
-      }
-
-      delete toRemove;
-      return next;
+  PairType &operator*() {
+    if (!m_ptr) {
+      throw IteratorError(
+          "IteratorError: iterator does not point to an element.");
     }
-    return pos;
+    return m_ptr->m_pair;
   }
+
+  UnorderedMapIterator &operator++() {
+    if (!m_ptr) {
+      throw IteratorError(
+          "IteratorError: iterator does not point to an element.");
+    }
+    m_ptr = m_ptr->m_next;
+    return *this;
+  }
+
+  UnorderedMapIterator operator++(int) {
+    if (!m_ptr) {
+      throw IteratorError(
+          "IteratorError: iterator does not point to an element.");
+    }
+    UnorderedMapIterator temp(*this);
+    m_ptr = m_ptr->m_next;
+    return temp;
+  }
+
+  bool operator==(const UnorderedMapIterator &p_other) const {
+    return m_ptr == p_other.m_ptr;
+  }
+
+  bool operator!=(const UnorderedMapIterator &p_other) const {
+    return !operator==(p_other);
+  }
+
+  PairType *operator->() {
+    if (!m_ptr) {
+      throw IteratorError(
+          "IteratorError: iterator does not point to an element.");
+    }
+    return &(m_ptr->m_pair);
+  }
+
+  int GetBucketNumber() const {
+    if (!m_ptr) {
+      throw IteratorError(
+          "IteratorError: iterator does not point to an element.");
+    }
+    return m_ptr->m_bucket_number;
+  }
+
+  NodeType *GetPtr() const { return m_ptr; }
 };

@@ -1,12 +1,33 @@
 #pragma once
-
 #include <exception>
 #include <string>
 
-class BadIteratorException : public std::exception {
-public:
-  const char *what() const override { return errorMessage.c_str(); }
-
+class InvalidValueError : public std::exception {
 private:
-  std::string errorMessage = "Iterator is not in container";
+  std::string m_error;
+
+public:
+  InvalidValueError(const std::string &p_error);
+
+  const char *what() const;
+};
+
+class ItemNotFoundError : public std::exception {
+private:
+  std::string m_error;
+
+public:
+  ItemNotFoundError(const std::string &p_error);
+
+  const char *what() const;
+};
+
+class IteratorError : public std::exception {
+private:
+  std::string m_error;
+
+public:
+  IteratorError(const std::string &p_error);
+
+  const char *what() const;
 };

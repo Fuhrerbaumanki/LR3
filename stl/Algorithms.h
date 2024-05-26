@@ -97,3 +97,33 @@ void forEach(Iterator beg, Iterator end, Operation op) {
     op(*beg);
   }
 }
+
+template <class _BidirectionalIter>
+void sort(_BidirectionalIter beg, _BidirectionalIter end) {
+  if (end <= beg) {
+    return;
+  }
+  _BidirectionalIter pivot = beg, middle = beg + 1;
+  for (_BidirectionalIter i = middle; i < end; ++i) {
+    if (*i < *pivot) {
+      std::iter_swap(i, middle);
+      ++middle;
+    }
+  }
+  std::iter_swap(beg, middle - 1);
+  sort(beg, middle - 1);
+  sort(middle, end);
+}
+
+template <class _InputIter, class _OutputIter, class _UnaryPred>
+_OutputIter copyIf(_InputIter source_beg, _InputIter source_end,
+                   _OutputIter dest_beg, _UnaryPred pred) {
+  while (source_beg != source_end) {
+    if (pred(*source_beg)) {
+      *dest_beg = *source_beg;
+      ++dest_beg;
+    }
+    ++source_beg;
+  }
+  return dest_beg;
+}
