@@ -9,7 +9,7 @@ private:
 public:
   InvalidValueError(const std::string &p_error);
 
-  const char *what() const;
+  const char *what() const noexcept override;
 };
 
 class ItemNotFoundError : public std::exception {
@@ -19,7 +19,7 @@ private:
 public:
   ItemNotFoundError(const std::string &p_error);
 
-  const char *what() const;
+  const char *what() const noexcept override;
 };
 
 class IteratorError : public std::exception {
@@ -29,5 +29,5 @@ private:
 public:
   IteratorError(const std::string &p_error);
 
-  const char *what() const;
+  const char *what() const noexcept override;
 };

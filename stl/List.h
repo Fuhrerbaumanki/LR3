@@ -6,13 +6,19 @@
 #include <iostream>
 
 template <typename _KeyType, typename _DataType> class Node {
+public:
   using PairType = std::pair<const _KeyType, _DataType>;
 
-public:
-  Node(PairType p_pair, int p_bucket_number, Node *p_prev = nullptr,
+  Node(const PairType &p_pair, int p_bucket_number, Node *p_prev = nullptr,
        Node *p_next = nullptr)
       : m_pair(p_pair), m_bucket_number(p_bucket_number), m_prev(p_prev),
         m_next(p_next) {}
+
+  Node(PairType &&p_pair, int p_bucket_number, Node *p_prev = nullptr,
+       Node *p_next = nullptr)
+      : m_pair(std::move(p_pair)), m_bucket_number(p_bucket_number),
+        m_prev(p_prev), m_next(p_next) {}
+
   PairType m_pair;
   Node *m_next;
   Node *m_prev;
@@ -63,13 +69,19 @@ public:
         prev_ptr = cur_ptr;
         cur_ptr = cur_ptr->m_next;
       }
-      prev_ptr->m_next =
+
+      NodeType *new_node =
           new NodeType(p_pair, p_bucket_number, prev_ptr, cur_ptr);
+      if (prev_ptr) {
+        prev_ptr->m_next = new_node;
+      } else {
+        p_node_ptr = new_node;
+      }
       if (cur_ptr) {
-        cur_ptr->m_prev = prev_ptr->m_next;
+        cur_ptr->m_prev = new_node;
       }
       m_size++;
-      return iterator(prev_ptr->m_next);
+      return iterator(new_node);
     }
     m_head = new NodeType(p_pair, p_bucket_number, nullptr, m_head);
     if (m_head->m_next) {

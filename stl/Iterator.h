@@ -1,4 +1,5 @@
 #pragma once
+#include "BadIteratorException.h"
 #include <iomanip>
 #include <iostream>
 #include <utility>
@@ -14,8 +15,6 @@ private:
 
 public:
   UnorderedMapIterator(NodeType *p_ptr = nullptr) : m_ptr(p_ptr) {}
-  UnorderedMapIterator(const UnorderedMapIterator &p_other)
-      : m_ptr(p_other.m_ptr) {}
 
   UnorderedMapIterator &operator=(const UnorderedMapIterator &p_other) {
     if (this == &p_other) {
@@ -92,19 +91,32 @@ public:
   NodeType *GetPtr() const { return m_ptr; }
 };
 
-template <typename _KeyType, typename _DataType>
-std::ostream &my_ostream(std::ostream &os,
-                         const UnorderedMapIterator<_KeyType, _DataType> &it) {
-  if (it.GetPtr() == nullptr) {
-    os << "Iterator points to nullptr";
-  } else {
-    const auto &pair = *it;
-    os << "|  Id: " << std::setw(5) << pair.first
-       << "  |  Name: " << std::setw(10) << pair.second.m_name
-       << "  |  Manufacturer: " << std::setw(10) << pair.second.m_manufacturer
-       << "  |  Warehouse address: " << std::setw(30)
-       << pair.second.m_warehouse_address << "  |  Weight: " << std::setw(5)
-       << pair.second.m_weight << "  |";
+template <class Pair, class CharT = char,
+          class Traits = std::char_traits<CharT>>
+class map_ostream_iterator {
+private:
+  std::basic_ostream<CharT, Traits> *m_stream;
+  const CharT *m_delimiter;
+
+public:
+  map_ostream_iterator(std::basic_ostream<CharT, Traits> &stream,
+                       const CharT *delimiter = "")
+      : m_stream(&stream), m_delimiter(delimiter) {}
+
+  map_ostream_iterator &operator=(const Pair &value) {
+    *m_stream << value.first << ": " << value.second << m_delimiter;
+    return *this;
   }
+
+  map_ostream_iterator &operator*() { return *this; }
+
+  map_ostream_iterator &operator++() { return *this; }
+
+  map_ostream_iterator &operator++(int) { return *this; }
+};
+
+template <typename K, typename V>
+std::ostream &operator<<(std::ostream &os, const std::pair<const K, V> &p) {
+  os << p.first << ": " << p.second;
   return os;
 }

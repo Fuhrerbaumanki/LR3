@@ -3,6 +3,7 @@
 #include "Iterator.h"
 #include <algorithm>
 #include <cstdint>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 
@@ -32,7 +33,7 @@ int main() {
       {1010,
        {1010, "mouse", "Razer", "San Francisco, Howard Street, 201", 0.1}}};
   cout << "Contents of cont_1: " << endl;
-  forEach(cont_1.begin(), cont_1.end(), [](const PairType &pair) {
+  for_each(cont_1.begin(), cont_1.end(), [](const PairType &pair) {
     cout << "|  Id: " << setw(5) << pair.first << "  |  Name: " << setw(10)
          << pair.second.m_name << "  |  Manufacturer: " << setw(10)
          << pair.second.m_manufacturer << "  |  Warehouse address: " << setw(30)
@@ -48,7 +49,7 @@ int main() {
   cont_2.Insert(obj_1);
   cont_2[obj_2.first] = obj_2.second;
   cout << "Contents of cont_2: " << endl;
-  forEach(cont_2.begin(), cont_2.end(), [](const PairType &pair) {
+  for_each(cont_2.begin(), cont_2.end(), [](const PairType &pair) {
     cout << "|  Id: " << setw(5) << pair.first << "  |  Name: " << setw(10)
          << pair.second.m_name << "  |  Manufacturer: " << setw(10)
          << pair.second.m_manufacturer << "  |  Warehouse address: " << setw(30)
@@ -75,7 +76,7 @@ int main() {
           "of the found element with 'San Francisco, Market Street, 1':"
        << endl
        << endl;
-  forEach(cont_1.begin(), cont_1.end(), [](const PairType &pair) {
+  for_each(cont_1.begin(), cont_1.end(), [](const PairType &pair) {
     cout << "|  Id: " << setw(5) << pair.first << "  |  Name: " << setw(10)
          << pair.second.m_name << "  |  Manufacturer: " << setw(10)
          << pair.second.m_manufacturer << "  |  Warehouse address: " << setw(30)
@@ -100,9 +101,17 @@ int main() {
   double weight_threshold = 1.0;
   std::cout << "Items with weight greater than " << weight_threshold << ":"
             << std::endl;
-  copyIf(cont_3.begin(), cont_3.end(), my_ostream<Goods>(std::cout, "\n"),
-         [weight_threshold](const PairType &pair) {
-           return pair.second.m_weight > weight_threshold;
-         });
+
+  ofstream out_file("Output.txt");
+
+  auto lambda =
+      [weight_threshold](const std::pair<const unsigned int, Goods> &pair) {
+        return pair.second.m_weight > weight_threshold;
+      };
+
+  copyIf(cont_3.begin(), cont_3.end(), out_file, lambda);
+
+  out_file.close();
+
   return 0;
 }

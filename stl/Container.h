@@ -136,7 +136,8 @@ public:
         m_max_load_factor) {
       Reserve(current_elements + 1);
     }
-    return m_chains.Insert(p_pair, m_table[bucket_number], bucket_number);
+    return m_chains.Insert(std::move(p_pair), m_table[bucket_number],
+                           bucket_number);
   }
 
   const _DataType &At(const _KeyType &p_key) const {
