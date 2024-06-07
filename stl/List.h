@@ -44,15 +44,14 @@ public:
 
   ~Chain() { Clear(); }
 
-  Chain &operator=(Chain &&p_other) {
-    if (this == &p_other) {
-      return *this;
+  Chain &operator=(Chain &&p_other) noexcept {
+    if (this != &p_other) {
+      Clear();
+      m_head = p_other.m_head;
+      m_size = p_other.m_size;
+      p_other.m_head = nullptr;
+      p_other.m_size = 0;
     }
-    Clear();
-    m_head = p_other.m_head;
-    m_size = p_other.m_size;
-    p_other.m_head = nullptr;
-    p_other.m_size = 0;
     return *this;
   }
 

@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <ostream>
 
 struct Goods {
   uint32_t m_id;
@@ -14,6 +15,11 @@ struct Goods {
   std::string m_warehouse_address;
   double m_weight;
 };
+
+std::ostream &operator<<(std::ostream &os, const Goods &p) {
+  os << p.m_id << ": " << p.m_weight;
+  return os;
+}
 
 int main() {
   using PairType = std::pair<const uint32_t, Goods>;
@@ -41,16 +47,18 @@ int main() {
          << pair.second.m_weight << "  |" << endl;
   });
   cout << endl;
-
+  /*
   UnorderedMap<uint32_t, Goods> cont_2;
   PairType obj_1 = {111, {111, "watch", "Casio", "Tokyo, Hatsudai, 1", 0.1}};
   PairType obj_2 = {
-      222, {222, "speaker", "Bose", "Framingham, The Mountain Road, 100", 1.2}};
+      222,
+      {222, "speaker", "Bose", "Framingham, The Mountain Road, 100 ", 1.2}};
   cont_2.Insert(obj_1);
+
   cont_2[obj_2.first] = obj_2.second;
   cout << "Contents of cont_2: " << endl;
   for_each(cont_2.begin(), cont_2.end(), [](const PairType &pair) {
-    cout << "|  Id: " << setw(5) << pair.first << "  |  Name: " << setw(10)
+    cout << "|  Id: " << setw(5) << pair.first << "Name : " << setw(10)
          << pair.second.m_name << "  |  Manufacturer: " << setw(10)
          << pair.second.m_manufacturer << "  |  Warehouse address: " << setw(30)
          << pair.second.m_warehouse_address << "  |  Weight: " << setw(5)
@@ -61,9 +69,8 @@ int main() {
   auto iter = findIf(cont_1.begin(), cont_1.end(), [](const PairType &pair) {
     return (7 < pair.second.m_weight && pair.second.m_weight < 9);
   });
-  cout << "The first element found with a mass from 7 to 9  from the container "
-          "cont_1:"
-       << endl;
+  cout << "The first element found with a mass from 7 to 9  from the container"
+       << " " << cont_1 : << endl;
   cout << "|  Id: " << setw(5) << iter->first << "  |  Name: " << setw(10)
        << iter->second.m_name << "  |  Manufacturer: " << setw(10)
        << iter->second.m_manufacturer << "  |  Warehouse address: " << setw(30)
@@ -84,6 +91,8 @@ int main() {
          << pair.second.m_weight << "  |" << endl;
   });
 
+*/
+
   UnorderedMap<uint32_t, Goods> cont_3{
       {101, {101, "laptop", "Dell", "New York, 5th Avenue, 15", 2.5}},
       {202, {202, "smartphone", "Samsung", "Seoul, Samsung-ro, 67", 0.3}},
@@ -102,12 +111,20 @@ int main() {
   std::cout << "Items with weight greater than " << weight_threshold << ":"
             << std::endl;
 
-  std::ofstream out_file("Output.txt");
+  ofstream out_file("Output.txt");
 
-  auto lambda = [](const PairType &pair) { return pair.second.m_weight > 1; };
+  if (!out_file) {
+    std::cerr << "Ошибка создания файла";
+    return -1;
+  }
+
+  auto lambda = [weight_threshold](const PairType &pair) {
+    return pair.second.m_weight > weight_threshold;
+  };
 
   copyIf(cont_3.begin(), cont_3.end(),
-         map_ostream_iterator<const uint32_t, Goods>(out_file, " "), lambda);
+         map_ostream_iterator<std::pair<const uint32_t, Goods>>(out_file, " "),
+         lambda);
 
   out_file.close();
 

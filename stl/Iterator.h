@@ -91,8 +91,7 @@ public:
   NodeType *GetPtr() const { return m_ptr; }
 };
 
-template <class Pair, class CharT = char,
-          class Traits = std::char_traits<CharT>>
+template <class T, class CharT = char, class Traits = std::char_traits<CharT>>
 class map_ostream_iterator {
 private:
   std::basic_ostream<CharT, Traits> *m_stream;
@@ -103,9 +102,8 @@ public:
                        const CharT *delimiter = "")
       : m_stream(&stream), m_delimiter(delimiter) {}
 
-  template <class K, class V>
-  map_ostream_iterator &operator=(const std::pair<K, V> &value) {
-    *m_stream << value.first << ": " << value.second << m_delimiter;
+  map_ostream_iterator &operator=(const T &value) {
+    *m_stream << value << m_delimiter;
     return *this;
   }
 
@@ -115,3 +113,9 @@ public:
 
   map_ostream_iterator &operator++(int) { return *this; }
 };
+
+template <typename K, typename V>
+std::ostream &operator<<(std::ostream &os, const std::pair<const K, V> &p) {
+  os << p.first << ": " << p.second;
+  return os;
+}

@@ -101,7 +101,7 @@ public:
   }
 
   UnorderedMap &operator=(UnorderedMap &&p_other) {
-    if (this = &p_other) {
+    if (this == &p_other) {
       return *this;
     }
     m_chains.Clear();
